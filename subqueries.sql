@@ -6,7 +6,7 @@ WHERE t.id IN (SELECT team1_id FROM scores WHERE team1_goal >= 3)
 --Teams who scored 2 or more goals as Team 2
 SELECT t.name
 FROM teams t
-WHERE t.id IN (SELECT team1_id FROM scores WHERE team1_goal >= 3)
+WHERE t.id IN (SELECT team2_id FROM scores WHERE team1_goal >= 3)
 
 --Matches where 5 or more goals were score in a match
 SELECT date, team1_goal, team2_goal
@@ -57,22 +57,7 @@ ROUND(AVG(team1_goal + team2_goal) -
 	  ON scores.stage_id = s.id
 	  GROUP BY s.name
 
---Stages where average goals > Overall AVG
-SELECT s.name AS stages,
-ROUND(AVG(team1_goal + team2_goal), 2) AS avg_goals,
-ROUND(AVG(team1_goal + team2_goal) - 
-	 (SELECT AVG(team1_goal + team2_goal)
-	  FROM scores), 2) AS diff
- FROM scores
-	  LEFT JOIN match AS m
-	  ON scores.id = m.id
-	  JOIN stages s
-	  ON scores.stage_id = s.id
-	  GROUP BY s.name
 
-
-
- 
 --Stages where average goals > Overall AVG + Overall AVG
 SELECT 
 s.stage_id, ROUND(s.avg_goals, 2) AS AVG_goals,
@@ -85,15 +70,16 @@ WHERE s.avg_goals > (SELECT AVG(team1_goal + team2_goal)
 					FROM scores)
 
 --Correlated subquery (matches where goals > twice the AVG
-SELECT 
-s.stage_id, ROUND(s.avg_goals, 2) AS AVG_goals,
-(SELECT AVG(team1_goal + team2_goal) FROM scores) AS overall_AVG
-FROM
-(SELECT stage_id, AVG(team1_goal + team2_goal) AS avg_goals
-FROM scores
-GROUP BY stage_id) AS s
-WHERE s.avg_goals > (SELECT AVG(team1_goal + team2_goal)
-					FROM scores)
+SELECT
+main.stage_id,
+main.team1_goal,
+main.team2_goal
+FROM scores AS main
+WHERE
+(team1_goal + team2_goal) >
+(SELECT AVG((sub.team1_goal + sub.team2_goal) * 2)
+FROM scores AS sub
+WHERE main.stage_id = sub.stage_id)
 
 --Scores equal Max number of goals in a match
 SELECT 
@@ -124,11 +110,11 @@ SELECT st.name, MAX(team1_goal + team2_goal) AS max_goals,
 (SELECT MAX(team1_goal + team2_goal) FROM scores) AS overall_max,
 (SELECT MAX (team1_goal + team2_goal) 
 FROM scores
-WHERE id IN (SELECT id FROM match WHERE EXTRACT(MONTH FROM date) = 06) AS june_max_goals
+WHERE id IN (SELECT id FROM match WHERE EXTRACT(MONTH FROM date) = 06)) AS june_max_goals
 FROM scores sc
 JOIN stages AS st
 ON sc.stage_id = st.id
-GROUP BY st.nameS
+GROUP BY st.name
 
 --Matches where team1 or team 2 score 2 or more goals
 SELECT id, stage_id, venue_id
