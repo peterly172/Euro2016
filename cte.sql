@@ -26,14 +26,14 @@ SELECT
 venue_id, (team1_goal + team2_goal) AS goals
 	FROM scores
 	WHERE id IN (SELECT id FROM match 
-				WHERE venue_id = 5 AND EXTRACT(MONTH FROM date) = 06))
+				WHERE  EXTRACT(MONTH FROM date) = 06))
 SELECT v.name, AVG(match_list.goals)
 FROM venues v
 LEFT JOIN match_list 
 ON v.id = match_list.venue_id
 GROUP BY v.name
 
-Full scoresheet using CTE
+--Full scoresheet using CTE
 WITH team1 AS (
 SELECT s.id, m.date, t.name AS team1, s.team1_goal
 FROM scores s
@@ -53,3 +53,28 @@ FROM team1
 JOIN team2
 On team1.id = team2.id
 ORDER BY date
+
+--Full Scoresheet for Portugals for Euro 2016 CTE
+WITH home AS(
+	SELECT s.id, t.name,
+CASE WHEN s.team1_goal > s.team2_goal THEN 'Portgual Win'
+WHEN s.team1_goal < s.team2_goal THEN 'Portugal Lost'
+ELSE 'Draw' END AS Portgual_Euro_16
+FROM scores s
+LEFT JOIN teams t
+ON s.team1_id = t.id),
+away AS (
+SELECT s.id, t.name,
+CASE WHEN s.team1_goal > s.team2_goal THEN 'Portgual Lost'
+WHEN s.team1_goal < s.team2_goal THEN 'Portugal Win'
+ELSE 'Draw' END AS Portgual_Euro_16
+FROM scores s
+LEFT JOIN teams t
+ON s.team2_id = t.id)
+SELECT DISTINCT m.date, home.name AS team1, away.name AS team2, team1_goal, team2_goal,
+RANK() OVER(ORDER BY ABS (team1_goal - team2_goal) DESC) AS match_rank
+FROM scores s
+JOIN match m ON s.id = m.id
+JOIN home ON s.id = home.id
+JOIN away ON s.id = away.id
+WHERE home.name = 'Portugal' OR away.name = 'Portugal'
