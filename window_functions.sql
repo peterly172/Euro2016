@@ -35,6 +35,7 @@ WHERE scores.team1_id = 1
 OR scores.team2_id = 1
 ORDER BY(team1_goal + team2_goal) DESC
 
+
 --Assessing Running total of goals and AVG from France when they are team1
 SELECT m.date, s.team1_goal, team2_goal,
 SUM(team1_goal) OVER(ORDER BY m.date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total,
